@@ -32,8 +32,8 @@ function zernikeloss!(g, Z, img, Hz, Zval)
         # TODO debug gradient function
         coef1 = S2tot .* DdotS
         coef2 = DdotS .* conj(DdotS)
-        num = coef1 .* conj(Dk) - coef2 .* conj(Sk)
-        Zk = reshape(num[ukeep] ./ S2tot[ukeep] .^ 2, size(num))
+        grad_num = coef1 .* conj(Dk) - coef2 .* conj(Sk)
+        Zk = reshape(grad_num[ukeep] ./ S2tot[ukeep] .^ 2, size(grad_num))
         ZconvH = fft(ifft(Zk) .* ifft(conj(Hk)))
 
         g = 4 * imag(sum(Hk .* ZconvH))
@@ -51,13 +51,14 @@ function zernike_img_fit(img, initial_param; kwargs...)
 
     g = nothing
     f(Z) = zernikeloss!(g, Z, img, Hz, Zval)
-    # function g!(g,Z)
-    #     g = zeros(1, Z_orders)
-    #     zernikeloss!(g, Z, img, Hz, Zval)
-    #     return g
-    # end
+    function g!(g,Z)
+        g = zeros(1, Z_orders)
+        zernikeloss!(g, Z, img, Hz, Zval)
+        return g
+    end
     params = zeros(1, Z_orders)
 
+    #result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
     result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
     Optim.converged(result) || @warn "Optimization failed to converge"
     return result

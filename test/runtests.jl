@@ -26,9 +26,7 @@ end
     n = 1.33
     lambda = 0.53
     NA = 0.5
-    Z_orders = 7 # Z(2.-2) -> Z(4,4)
-
-
+    Z_orders = 11 # Z(2.-2) -> Z(4,4)
 
     img = generate_fake_img()
     initial_param = n, lambda, NA, size(img), Z_orders
