@@ -1,5 +1,9 @@
 module pd_density
 
-# Write your package code here.
+using Images, ImageView, Optim
+
+export zernike_img_fit
+
+include("zernike_fit.jl")
 
 end
