@@ -1,6 +1,6 @@
 module pd_density
 
-using Images, ImageView, Optim
+using Images, Optim
 
 export zernike_img_fit
 
