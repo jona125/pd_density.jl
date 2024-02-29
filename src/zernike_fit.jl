@@ -25,6 +25,7 @@ function zernikeloss!(g, Z, img, Hz, Zval)
     ukeep = abs.(S2tot) .> eps()
     D2tot = Dk .* conj(Dk)
     DdotS = Dk .* conj(Sk)
+    
 
     num = DdotS .* conj(DdotS)
 
@@ -33,10 +34,17 @@ function zernikeloss!(g, Z, img, Hz, Zval)
         coef1 = S2tot .* DdotS
         coef2 = DdotS .* conj(DdotS)
         grad_num = coef1 .* conj(Dk) - coef2 .* conj(Sk)
-        Zk = reshape(grad_num[ukeep] ./ S2tot[ukeep] .^ 2, size(grad_num))
+        Zk = zeros(Complex{Float64},imsz)
+        for id in findall(ukeep)
+            Zk[id] = grad_num[id] ./ S2tot[id] .^ 2
+        end
         ZconvH = fft(ifft(Zk) .* ifft(conj(Hk)))
 
-        g = 4 * imag(sum(Hk .* ZconvH))
+        grad_mat = 4 * imag(Hk .* ZconvH)
+        for id in 1:length(g)
+            g[id] = sum(grad_mat .* Zval[:,:,id])
+        end
+        @show g
     end
 
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
@@ -50,6 +58,7 @@ function zernike_img_fit(img, initial_param; kwargs...)
     Hz = zern_initial(img, H, rho, initial_param)
 
     g = nothing
+    #g = zeros(1, Z_orders)
     f(Z) = zernikeloss!(g, Z, img, Hz, Zval)
     function g!(g,Z)
         g = zeros(1, Z_orders)
@@ -58,8 +67,8 @@ function zernike_img_fit(img, initial_param; kwargs...)
     end
     params = zeros(1, Z_orders)
 
-    #result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
-    result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
+    result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
+    #result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
     Optim.converged(result) || @warn "Optimization failed to converge"
     return result
 end

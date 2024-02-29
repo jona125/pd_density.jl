@@ -2,6 +2,18 @@ using pd_density
 using Test
 using Optim
 
+function construct_Zern(Zcoefs, Zval)
+    
+    phi = Zcoefs2phi(Zcoefs, Zval) #calculate phi with current Zcoefs
+
+    Hk = zeros(Complex{Float64}, imsz) # compute the pupil function
+    for i = 1:imsz[3]
+        Hk[:, :, i] = Hz[:, :, i] .* exp(im * (phi))
+    end
+    
+
+end
+
 function create_sphere(stack, center, radius, gray_level)
     for coord in CartesianIndices(stack)
         if (
