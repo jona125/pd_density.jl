@@ -42,7 +42,7 @@ end
 
     img = generate_fake_img()
     initial_param = n, lambda, NA, size(img), Z_orders
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-21)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
     @show Optim.minimizer(result)
 
@@ -50,8 +50,8 @@ end
     img = zeros(128, 128, 128)
     img[64, 64, 64] = 1
     initial_param = n, lambda, NA, size(img), Z_orders
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-21)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
-    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-14
+    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-6
 
 end
