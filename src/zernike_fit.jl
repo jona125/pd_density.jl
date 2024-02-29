@@ -5,7 +5,7 @@ include("supzern.jl")
 export zernike_img_fit
 
 
-function zernikeloss!(g, Z, img, Hz, Zval)
+function loss_prep!(Z, img, Hz, Zval)
     imsz = size(img)
     phi = Zcoefs2phi(Z, Zval) #calculate phi with current Zcoefs
 
@@ -25,31 +25,34 @@ function zernikeloss!(g, Z, img, Hz, Zval)
     ukeep = abs.(S2tot) .> eps()
     D2tot = Dk .* conj(Dk)
     DdotS = Dk .* conj(Sk)
-    
+    return Hk, Dk, Sk, S2tot, ukeep, D2tot, DdotS
+end
 
+function zernikeloss!(Z, img, Hz, Zval)
+    Hk, Dk, Sk, S2tot, ukeep, D2tot, DdotS = loss_prep!(Z, img, Hz, Zval)
     num = DdotS .* conj(DdotS)
-
-    if g !== nothing
-        # TODO debug gradient function
-        coef1 = S2tot .* DdotS
-        coef2 = DdotS .* conj(DdotS)
-        grad_num = coef1 .* conj(Dk) - coef2 .* conj(Sk)
-        Zk = zeros(Complex{Float64},imsz)
-        for id in findall(ukeep)
-            Zk[id] = grad_num[id] ./ S2tot[id] .^ 2
-        end
-        ZconvH = fft(ifft(Zk) .* ifft(conj(Hk)))
-
-        grad_mat = 4 * imag(Hk .* ZconvH)
-        for id in 1:length(g)
-            g[id] = sum(grad_mat .* Zval[:,:,id])
-        end
-        @show g
-    end
 
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
 end
 
+function zernikegrad!(g, Z, img, Hz, Zval)
+    Hk, Dk, Sk, S2tot, ukeep, D2tot, DdotS = loss_prep!(Z, img, Hz, Zval)
+
+    coef1 = S2tot .* DdotS
+    coef2 = DdotS .* conj(DdotS)
+    grad_num = coef1 .* conj(Dk) - coef2 .* conj(Sk)
+    Zk = zeros(Complex{Float64}, size(grad_num))
+    for id in findall(ukeep)
+        Zk[id] = grad_num[id] ./ (S2tot[id] .^ 2)
+    end
+    ZconvH = fft(ifft(Zk) .* ifft(conj(Hk)))
+
+    grad_mat = 4 * imag(Hk .* ZconvH)
+    for id = 1:length(g)
+        g[id] = sum(grad_mat .* Zval[:, :, id])
+    end
+    #@show g
+end
 
 function zernike_img_fit(img, initial_param; kwargs...)
     n, NA, lambda, imsz, Z_orders = initial_param
@@ -57,14 +60,10 @@ function zernike_img_fit(img, initial_param; kwargs...)
     Zval = zernike_value(H, Z_orders)
     Hz = zern_initial(img, H, rho, initial_param)
 
-    g = nothing
     #g = zeros(1, Z_orders)
-    f(Z) = zernikeloss!(g, Z, img, Hz, Zval)
-    function g!(g,Z)
-        g = zeros(1, Z_orders)
-        zernikeloss!(g, Z, img, Hz, Zval)
-        return g
-    end
+    f(Z) = zernikeloss!(Z, img, Hz, Zval)
+    g!(g, Z) = zernikegrad!(g, Z, img, Hz, Zval)
+
     params = zeros(1, Z_orders)
 
     result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))

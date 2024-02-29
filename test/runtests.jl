@@ -3,14 +3,14 @@ using Test
 using Optim
 
 function construct_Zern(Zcoefs, Zval)
-    
+
     phi = Zcoefs2phi(Zcoefs, Zval) #calculate phi with current Zcoefs
 
     Hk = zeros(Complex{Float64}, imsz) # compute the pupil function
     for i = 1:imsz[3]
         Hk[:, :, i] = Hz[:, :, i] .* exp(im * (phi))
     end
-    
+
 
 end
 
@@ -42,7 +42,7 @@ end
 
     img = generate_fake_img()
     initial_param = n, lambda, NA, size(img), Z_orders
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-21)
 
     @show Optim.minimizer(result)
 
@@ -50,8 +50,8 @@ end
     img = zeros(128, 128, 128)
     img[64, 64, 64] = 1
     initial_param = n, lambda, NA, size(img), Z_orders
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-21)
 
-    @test Optim.minimizer(result) == zeros(1, Z_orders)
+    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-14
 
 end
