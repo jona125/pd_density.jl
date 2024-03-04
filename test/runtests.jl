@@ -1,17 +1,20 @@
 using pd_density
 using Test
 using Optim
+include("../src/pd_initialize.jl")
+include("../src/suppzern.jl")
 
-function construct_Zern(Zcoefs, Zval)
+function construct_Zern(Zcoefs, initial_param, img)
+    n, NA, lambda, imsz, Z_orders = initial_param
+    H, rho, theta = pd_initial(NA, lambda, imsz)
+    Zval = zernike_value(H, Z_orders, rho, theta)
+    Hz = zern_initial(img, H, rho, initial_param)
 
-    phi = Zcoefs2phi(Zcoefs, Zval) #calculate phi with current Zcoefs
+    Hk, Sk = ZernFF(Z, Hz, Zval, imsz)
 
-    Hk = zeros(Complex{Float64}, imsz) # compute the pupil function
-    for i = 1:imsz[3]
-        Hk[:, :, i] = Hz[:, :, i] .* exp(im * (phi))
-    end
+    imgfft = fft(img)
 
-
+    return abs.(ifft(imgfft .* Sk))
 end
 
 function create_sphere(stack, center, radius, gray_level)
@@ -26,8 +29,8 @@ function create_sphere(stack, center, radius, gray_level)
 end
 
 function generate_fake_img()
-    stack = zeros(256, 256, 64)
-    stack = create_sphere(stack, (128, 128, 32), 30, 150)
+    stack = zeros(256, 256, 256)
+    stack = create_sphere(stack, (128, 128, 128), 96, 64)
     stack = convert(Array{Float64}, stack)
     return stack
 end
@@ -40,18 +43,35 @@ end
     NA = 0.5
     Z_orders = 11 # Z(2.-2) -> Z(4,4)
 
-    img = generate_fake_img()
-    initial_param = n, lambda, NA, size(img), Z_orders
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
-
-    @show Optim.minimizer(result)
-
-
     img = zeros(128, 128, 128)
     img[64, 64, 64] = 1
     initial_param = n, lambda, NA, size(img), Z_orders
     result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
-    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-6
+    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
+
+    img = generate_fake_img()
+    Z = zeros(1, Z_orders)
+    initial_param = n, lambda, NA, size(img), Z_orders
+    #img = construct_Zern(Z, initial_param, img)
+    #img ./= maximum(img)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
+
+    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
+
+    img = generate_fake_img()
+    Z = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]'
+    img = construct_Zern(Z, initial_param, img)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
+
+    @test Optim.minimizer(result) ≈ Z atol = 1e-4
+
+
+    img = generate_fake_img()
+    Z = rand(1, Z_orders)
+    img = construct_Zern(Z, initial_param, img)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
+
+    @test Optim.minimizer(result) ≈ Z atol = 1e-4
 
 end

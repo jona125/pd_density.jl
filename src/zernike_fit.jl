@@ -1,21 +1,12 @@
 using FFTW, ZernikePolynomials, DSP
 include("pd_initialize.jl")
-include("supzern.jl")
+include("suppzern.jl")
 
 export zernike_img_fit
 
-
 function loss_prep!(Z, img, Hz, Zval)
     imsz = size(img)
-    phi = Zcoefs2phi(Z, Zval) #calculate phi with current Zcoefs
-
-    Hk = zeros(Complex{Float64}, imsz) # compute the pupil function
-    for i = 1:imsz[3]
-        Hk[:, :, i] = Hz[:, :, i] .* exp(im * (phi))
-    end
-    hk = ifft(Hk)
-    sk = hk .* conj(hk)
-    Sk = fft(sk) # PSF in coherent illumination
+    Hk, Sk = ZernFF(Z, Hz, Zval, imsz)
 
     #compute transform of image
     Dk = fft(img)
@@ -29,14 +20,14 @@ function loss_prep!(Z, img, Hz, Zval)
 end
 
 function zernikeloss!(Z, img, Hz, Zval)
-    Hk, Dk, Sk, S2tot, ukeep, D2tot, DdotS = loss_prep!(Z, img, Hz, Zval)
+    _, _, _, S2tot, ukeep, D2tot, DdotS = loss_prep!(Z, img, Hz, Zval)
     num = DdotS .* conj(DdotS)
 
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
 end
 
 function zernikegrad!(g, Z, img, Hz, Zval)
-    Hk, Dk, Sk, S2tot, ukeep, D2tot, DdotS = loss_prep!(Z, img, Hz, Zval)
+    Hk, Dk, Sk, S2tot, ukeep, _, DdotS = loss_prep!(Z, img, Hz, Zval)
 
     coef1 = S2tot .* DdotS
     coef2 = DdotS .* conj(DdotS)
@@ -56,8 +47,8 @@ end
 
 function zernike_img_fit(img, initial_param; kwargs...)
     n, NA, lambda, imsz, Z_orders = initial_param
-    H, rho = pd_initial(NA, lambda, imsz)
-    Zval = zernike_value(H, Z_orders)
+    H, rho, theta = pd_initial(NA, lambda, imsz)
+    Zval = zernike_value(H, Z_orders, rho, theta)
     Hz = zern_initial(img, H, rho, initial_param)
 
     #g = zeros(1, Z_orders)
