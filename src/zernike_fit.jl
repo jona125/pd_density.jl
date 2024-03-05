@@ -1,10 +1,10 @@
 using FFTW, ZernikePolynomials, DSP
-include("pd_initialize.jl")
-include("suppzern.jl")
+include("pd_initialize.jl")  # in general, I'd recommend putting all your `include`s in the top-level source file (`pd_density.jl`)
+include("suppzern.jl")       # if you need to move the `using` too, that's fine
 
-export zernike_img_fit
+export zernike_img_fit       # I'd also put the `exports` there. It makes it easier to see at a glance what a package exports
 
-function loss_prep!(Z, img, Hz, Zval)
+function loss_prep!(Z, img, Hz, Zval)   # does this function actually modify any of its arguments? If not, why is it a `!` function?
     imsz = size(img)
     Hk, Sk = ZernFF(Z, Hz, Zval, imsz)
 
@@ -19,7 +19,7 @@ function loss_prep!(Z, img, Hz, Zval)
     return Hk, Dk, Sk, S2tot, ukeep, D2tot, DdotS
 end
 
-function zernikeloss!(Z, img, Hz, Zval)
+function zernikeloss!(Z, img, Hz, Zval)   # likewise, does it modify outputs?
     _, _, _, S2tot, ukeep, D2tot, DdotS = loss_prep!(Z, img, Hz, Zval)
     num = DdotS .* conj(DdotS)
 
@@ -39,13 +39,21 @@ function zernikegrad!(g, Z, img, Hz, Zval)
     ZconvH = fft(ifft(Zk) .* ifft(conj(Hk)))
 
     grad_mat = 4 * imag(Hk .* ZconvH)
-    for id = 1:length(g)
+    for id in eachindex(g)
         g[id] = sum(grad_mat .* Zval[:, :, id])
     end
+    return g    # I generally like to return the modified argument, because it allows you to pass it on to downstream code, e.g., `norm(zernikegrad!(...))`
     #@show g
 end
 
 function zernike_img_fit(img, initial_param; kwargs...)
+    # `initial_param` encodes meaning-by-position, which I don't recommend---it makes it hard to modify and hard to understand
+    # Good alternatives:
+    # 1. Use a NamedTuple: `initial_param = (n = n, NA = NA, lambda = lambda, imsz = size(img), Z_orders = Z_orders)`
+    # 2. Use a struct: `struct InitialParam; n; NA; lambda; imsz; Z_orders; end` except give each parameter types
+    # With either one, Julia lets you unpack them very efficiently:
+    #    (; n, NA, lambda, imsz, Z_orders) = initial_param
+    # will extract the fields of `initial_param` into the variables `n`, `NA`, `lambda`, `imsz`, and `Z_orders`
     n, NA, lambda, imsz, Z_orders = initial_param
     H, rho, theta = pd_initial(NA, lambda, imsz)
     Zval = zernike_value(H, Z_orders, rho, theta)

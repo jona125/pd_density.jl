@@ -1,8 +1,8 @@
 using pd_density
 using Test
 using Optim, ZernikePolynomials, FFTW
-include("../src/pd_initialize.jl")
-include("../src/suppzern.jl")
+include("../src/pd_initialize.jl")  # you shouldn't need this! It defines two versions of the same function
+include("../src/suppzern.jl")       # better to use `pd_density.some_private_function` instead of re-including the file
 
 function construct_Zern(Zcoefs, initial_param, img)
     n, NA, lambda, imsz, Z_orders = initial_param
