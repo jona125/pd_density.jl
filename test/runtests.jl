@@ -1,6 +1,6 @@
 using pd_density
 using Test
-using Optim
+using Optim, ZernikePolynomials, FFTW
 include("../src/pd_initialize.jl")
 include("../src/suppzern.jl")
 
@@ -10,7 +10,7 @@ function construct_Zern(Zcoefs, initial_param, img)
     Zval = zernike_value(H, Z_orders, rho, theta)
     Hz = zern_initial(img, H, rho, initial_param)
 
-    Hk, Sk = ZernFF(Z, Hz, Zval, imsz)
+    _, Sk = ZernFF(Z, Hz, Zval, imsz)
 
     imgfft = fft(img)
 
@@ -30,7 +30,7 @@ end
 
 function generate_fake_img()
     stack = zeros(256, 256, 256)
-    stack = create_sphere(stack, (128, 128, 128), 96, 64)
+    stack = create_sphere(stack, (128, 128, 128), 96, 128)
     stack = convert(Array{Float64}, stack)
     return stack
 end
@@ -60,17 +60,19 @@ end
     @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
 
     img = generate_fake_img()
-    Z = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]'
-    img = construct_Zern(Z, initial_param, img)
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
+    Z = zeros(1, Z_orders)
+    Z[2] = 0.3
+    img_ = construct_Zern(Z, initial_param, img)
+    img_ = img_./maximum(img_) * 0.5 + img
+    result = zernike_img_fit(img_, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ Z atol = 1e-4
 
 
-    img = generate_fake_img()
     Z = rand(1, Z_orders)
-    img = construct_Zern(Z, initial_param, img)
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
+    img_ = construct_Zern(Z, initial_param, img)
+    img_ = img_./maximum(img_) * 0.5 + img
+    result = zernike_img_fit(img_, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ Z atol = 1e-4
 
