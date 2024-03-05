@@ -10,7 +10,7 @@ function construct_Zern(Zcoefs, initial_param, img)
     Zval = zernike_value(H, Z_orders, rho, theta)
     Hz = zern_initial(img, H, rho, initial_param)
 
-    _, Sk = ZernFF(Z, Hz, Zval, imsz)
+    _, Sk = ZernFF(Zcoefs, Hz, Zval, imsz)
 
     imgfft = fft(img)
 
@@ -51,10 +51,7 @@ end
     @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
 
     img = generate_fake_img()
-    Z = zeros(1, Z_orders)
     initial_param = n, lambda, NA, size(img), Z_orders
-    #img = construct_Zern(Z, initial_param, img)
-    #img ./= maximum(img)
     result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
