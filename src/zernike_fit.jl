@@ -57,8 +57,8 @@ function zernike_img_fit(img, initial_param; kwargs...)
 
     params = zeros(1, Z_orders)
 
-    result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
-    #result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
+#result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
+    result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
     Optim.converged(result) || @warn "Optimization failed to converge"
     return result
 end
