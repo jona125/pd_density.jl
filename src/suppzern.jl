@@ -1,5 +1,12 @@
-function ZernFF(Z, Hz, Zval, imsz)
+# Fourier transfer plane generation ZernFT()
+# Zernike collection generation zernike_value()
+# Zernike polynomial Zern_gen()
+# phi generation from Zernike value Zcoefs2phi()
+# construct matrices for fitting construct_Zernmat()
+#
 
+
+function ZernFT(Z, Hz, Zval, imsz)
     phi = Zcoefs2phi(Z, Zval)
 
     Hk = zeros(Complex{Float64}, imsz) # compute the pupil function
@@ -44,10 +51,20 @@ function Zern_gen(p, sz, rho, theta)
 end
 
 function Zcoefs2phi(Zcoefs, Zval)
-    #@show Zcoefs
+    @show Zcoefs
     phi = zeros(size(Zval)[1:end-1])
     for i = 1:length(Zcoefs)
         phi = phi + Zcoefs[i] * Zval[:, :, i]
     end
     return phi
+end
+
+
+function construct_Zernmat(initial_param::InitialParam, img)
+    (; n, NA, lambda, imsz, Z_orders) = initial_param
+    H, rho, theta = pd_initial(NA, lambda, imsz)
+    Zval = zernike_value(H, Z_orders, rho, theta)
+    Hz = zern_initial(img, H, rho, initial_param)
+
+    return Hz, Zval
 end

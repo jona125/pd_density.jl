@@ -1,3 +1,7 @@
+# Pupil initialization  pd_initial()
+# Zernike initialization zern_initial()
+#
+
 function pd_initial(NA, lambda, imsz)
     pupil = NA / lambda
 
@@ -23,8 +27,8 @@ function pd_initial(NA, lambda, imsz)
 end
 
 function zern_initial(img, H, rho, initial_param)
-    n, _, lambda, _, _ = initial_param
-    z = size(img)[3]
+    (; n, NA, lambda, imsz, Z_orders) = initial_param
+    z = imsz[3]
     zFrame = (1-Int(z / 2)):Int(z / 2)
 
     coef = n / lambda
