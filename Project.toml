@@ -13,7 +13,7 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 ZernikePolynomials = "e462d300-c971-11e9-30f1-fb93b1f8f73a"
 
 [compat]
-julia = "1"
+julia = "1.6"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
