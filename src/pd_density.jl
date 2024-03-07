@@ -7,7 +7,6 @@ struct InitialParam
     n::Float64
     NA::Float64
     lambda::Float64
-    imsz::Tuple
     Z_orders::Int64
 end
 

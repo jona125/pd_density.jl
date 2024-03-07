@@ -12,16 +12,16 @@ function loss_prep(Z, img, Hz, Zval)
     Dk = fft(img)
 
     # penalty prep
-    S2tot = Sk .* conj(Sk)
+    S2tot = abs.(Sk .* conj(Sk))
     ukeep = abs.(S2tot) .> eps()
-    D2tot = Dk .* conj(Dk)
+    D2tot = abs.(Dk .* conj(Dk))
     DdotS = Dk .* conj(Sk)
     return Hk, Dk, Sk, S2tot, ukeep, D2tot, DdotS
 end
 
 function zernikeloss(Z, img, Hz, Zval)
     _, _, _, S2tot, ukeep, D2tot, DdotS = loss_prep(Z, img, Hz, Zval)
-    num = DdotS .* conj(DdotS)
+    num = abs.(DdotS .* conj(DdotS))
 
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
 end
@@ -47,7 +47,7 @@ function zernikegrad!(g, Z, img, Hz, Zval)
 end
 
 function zernike_img_fit(img, initial_param::InitialParam; kwargs...)
-    Hz, Zval = construct_Zernmat(initial_param, img)
+    Hz, Zval = construct_Zernmat(img, initial_param)
 
     #g = zeros(1, Z_orders)
     f(Z) = zernikeloss(Z, img, Hz, Zval)

@@ -1,10 +1,10 @@
 using pd_density
 using Test
-using Optim, ZernikePolynomials, FFTW
+using Optim, FiniteDifferences, FFTW
 
-function construct_Zernimg(Zcoefs, initial_param::pd_density.InitialParam, img)
-    Hz, _, _, _, Zval = pd_density.construct_Zernmat(initial_param, img)
-    _, Sk = pd_density.ZernFT(Zcoefs, Hz, Zval, initial_param.imsz)
+function construct_Zernimg(Zcoefs, img, initial_param::pd_density.InitialParam)
+    Hz, Zval = pd_density.construct_Zernmat(img, initial_param)
+    _, Sk = pd_density.ZernFT(Zcoefs, Hz, Zval, size(img))
 
     imgfft = fft(img)
 
@@ -39,31 +39,30 @@ end
 
     img = zeros(128, 128, 128)
     img[64, 64, 64] = 1
-    initial_param_1 = pd_density.InitialParam(n, NA, lambda, size(img), Z_orders)
-    result = zernike_img_fit(img, initial_param_1; g_abstol = 1e-14)
+    initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
 
     img = generate_fake_img()
-    initial_param_2 = pd_density.InitialParam(n, NA, lambda, size(img), Z_orders)
-    result = zernike_img_fit(img, initial_param_2; g_abstol = 1e-14)
+    initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
 
-    img = generate_fake_img()
     Z = zeros(1, Z_orders)
     Z[2] = 0.3
-    img_ = construct_Zern(Z, initial_param, img)
+    img_ = construct_Zernimg(Z, img, initial_param_2)
     img_ = img_ ./ maximum(img_) * 0.5 + img
-    result = zernike_img_fit(img_, initial_param_2; g_abstol = 1e-14)
+    result = zernike_img_fit(img_, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ Z atol = 1e-4
 
 
     Z = rand(1, Z_orders)
-    img_ = construct_Zern(Z, initial_param, img)
+    img_ = construct_Zernimg(Z, img, initial_param_2)
     img_ = img_ ./ maximum(img_) * 0.5 + img
-    result = zernike_img_fit(img_, initial_param_2; g_abstol = 1e-14)
+    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ Z atol = 1e-4
 

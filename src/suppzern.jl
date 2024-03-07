@@ -60,11 +60,11 @@ function Zcoefs2phi(Zcoefs, Zval)
 end
 
 
-function construct_Zernmat(initial_param::InitialParam, img)
-    (; n, NA, lambda, imsz, Z_orders) = initial_param
-    H, rho, theta = pd_initial(NA, lambda, imsz)
+function construct_Zernmat(img, initial_param::InitialParam)
+    (; n, NA, lambda, Z_orders) = initial_param
+    H, rho, theta = pd_initial(NA, lambda, size(img))
     Zval = zernike_value(H, Z_orders, rho, theta)
-    Hz = zern_initial(img, H, rho, initial_param)
+    Hz = zern_initial(H, rho, initial_param, size(img))
 
     return Hz, Zval
 end
