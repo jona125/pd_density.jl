@@ -12,7 +12,7 @@ function loss_prep(Z, img, Hz, Zval)
     Dk = fft(img)
 
     # penalty prep
-    S2tot = abs.(Sk .* conj(Sk))
+    S2tot = abs2.(Sk)
     ukeep = abs.(S2tot) .> eps()
     D2tot = abs.(Dk .* conj(Dk))
     DdotS = Dk .* conj(Sk)
