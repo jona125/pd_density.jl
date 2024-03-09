@@ -51,7 +51,7 @@ function Zern_gen(p, sz, rho, theta)
 end
 
 function Zcoefs2phi(Zcoefs, Zval)
-    @show Zcoefs
+    #@show Zcoefs
     phi = zeros(size(Zval)[1:end-1])
     for i = 1:length(Zcoefs)
         phi = phi + Zcoefs[i] * Zval[:, :, i]
