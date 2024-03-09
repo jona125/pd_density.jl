@@ -29,7 +29,7 @@ end
 function zern_initial(H, rho, initial_param, imsz)
     (; n, NA, lambda, Z_orders) = initial_param
     z = imsz[3]
-    zFrame = (1-Int(z / 2)):Int(z / 2)
+    zFrame = (1:z) .- Int(floor(z / 2))
 
     coef = n / lambda
     kz = sqrt.(Complex.(coef^2 .- rho .^ 2))
