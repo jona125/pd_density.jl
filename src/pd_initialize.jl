@@ -1,3 +1,7 @@
+# Pupil initialization  pd_initial()
+# Zernike initialization zern_initial()
+#
+
 function pd_initial(NA, lambda, imsz)
     pupil = NA / lambda
 
@@ -22,14 +26,14 @@ function pd_initial(NA, lambda, imsz)
     return H, rho, theta
 end
 
-function zern_initial(img, H, rho, initial_param)
-    n, _, lambda, _, _ = initial_param
-    z = size(img)[3]
-    zFrame = (1-Int(z / 2)):Int(z / 2)
+function zern_initial(H, rho, initial_param, imsz)
+    (; n, NA, lambda, Z_orders) = initial_param
+    z = imsz[3]
+    zFrame = (1:z) .- Int(floor(z / 2))
 
     coef = n / lambda
     kz = sqrt.(Complex.(coef^2 .- rho .^ 2))
-    Hz = zeros(Complex{Float64}, size(img))
+    Hz = zeros(Complex{Float64}, imsz)
     for ix = 1:z
         Hz[:, :, ix] = H .* exp(im * 2 * pi * zFrame[ix] .* kz)
     end
