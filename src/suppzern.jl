@@ -12,7 +12,7 @@ function ZernFT(Z, Hz, Zval, imsz)
     Hk = zeros(Complex{Float64}, imsz) # compute the pupil function
     hk = zeros(Complex{Float64}, imsz)
     for i = 1:imsz[3]
-        Hk[:, :, i] = Hz[:, :, i] .* cis.(phi)  # Critical! `cis(A)` computes the *matrix exponential* of `A`, not the elementwise exponential.
+        Hk[:, :, i] = Hz[:, :, i] .* cis.(phi)  # Critical! `exp(A)` computes the *matrix exponential* of `A`, not the elementwise exponential.
         hk[:, :, i] = ifft(Hk[:, :, i])              # See https://en.wikipedia.org/wiki/Matrix_exponential. I assume you want the elementwise exponential?
     end
     sk = hk .* conj(hk)
