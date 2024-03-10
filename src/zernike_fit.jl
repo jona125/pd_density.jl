@@ -48,6 +48,8 @@ end
 
 function zernike_img_fit(img, initial_param::InitialParam; kwargs...)
     Hz, Zval = construct_Zernmat(img, initial_param)
+    # Since Hz and Zval are not inferrable, that means your definitions of `f` and `g!` are not inferrable either.
+    # That may be contributing to poor performance and test-timeouts (not yet sure).
 
     #g = zeros(1, Z_orders)
     f(Z) = zernikeloss(Z, img, Hz, Zval)
@@ -56,7 +58,7 @@ function zernike_img_fit(img, initial_param::InitialParam; kwargs...)
     params = zeros(1, initial_param.Z_orders)
 
     #result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
-    result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
+    result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))  # if you don't use your `g!`, you might want
     Optim.converged(result) || @warn "Optimization failed to converge"
     return result
 end

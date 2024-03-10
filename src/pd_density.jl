@@ -1,6 +1,6 @@
 module pd_density
 
-using Images, Optim
+using Images, Optim    # Images is a pretty heavy dependency. Can you use a subset? I typically start with ImageCore and then add specific needed functonality.
 using FFTW, ZernikePolynomials, DSP
 
 struct InitialParam
