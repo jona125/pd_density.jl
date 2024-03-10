@@ -46,7 +46,7 @@ function zern_initial(H, rho, initial_param, imsz)
     kz = sqrt.(Complex.(coef^2 .- rho .^ 2))
     Hz = zeros(Complex{Float64}, imsz)
     for ix = 1:z
-        Hz[:, :, ix] = H .* cis.(2 * pi * zFrame[ix] .* kz)  # see comment in suppzern.jl. Is this change correct?
+        Hz[:, :, ix] = H .* cispi.(2 * zFrame[ix] .* kz)  # see comment in suppzern.jl. Is this change correct?
     end
     return Hz
 end
