@@ -2,8 +2,6 @@
 # Zernike initialization zern_initial()
 #
 
-debug = Ref{Any}()
-
 function pd_initial(NA, lambda, imsz)
     pupil = NA / lambda
 
