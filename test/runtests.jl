@@ -60,17 +60,15 @@ end
 
     Z = zeros(1, Z_orders)
     Z[2] = 0.3
-    img_ = construct_Zernimg(Z, img, initial_param_2)
-    img_ = img_ ./ maximum(img_) * 0.5 + img
+    img_ = construct_Zernimg(Z, img, initial_param)
     result = zernike_img_fit(img_, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ Z atol = 1e-4
 
 
     Z = rand(1, Z_orders)
-    img_ = construct_Zernimg(Z, img, initial_param_2)
-    img_ = img_ ./ maximum(img_) * 0.5 + img
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
+    img_ = construct_Zernimg(Z, img, initial_param)
+    result = zernike_img_fit(img_, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ Z atol = 1e-4
 
