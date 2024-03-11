@@ -1,6 +1,6 @@
 module pd_density
 
-using Images, Optim
+using Optim
 using FFTW, ZernikePolynomials, DSP
 
 struct InitialParam

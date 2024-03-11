@@ -6,9 +6,17 @@ function construct_Zernimg(Zcoefs, img, initial_param::pd_density.InitialParam)
     Hz, Zval = pd_density.construct_Zernmat(img, initial_param)
     _, Sk = pd_density.ZernFT(Zcoefs, Hz, Zval, size(img))
 
-    imgfft = fft(img)
+    Dk = fft(img)
+    S2tot = abs2.(Sk)
+    ukeep = abs.(S2tot) .> eps()
+    DdotS = Dk .* conj(Sk)
 
-    return abs.(ifft(imgfft .* Sk))
+    F = zeros(Complex{Float64}, size(DdotS))
+    for id in findall(ukeep)
+        F[id] = DdotS[id] / S2tot[id]
+    end
+
+    return abs.(ifft(F))
 end
 
 function create_sphere(stack, center, radius, gray_level)
@@ -24,7 +32,7 @@ end
 
 function generate_fake_img()
     stack = zeros(256, 256, 256)
-    stack = create_sphere(stack, (128, 128, 128), 96, 128)
+    stack = create_sphere(stack, (128, 128, 128), 96, 256)
     stack = convert(Array{Float64}, stack)
     return stack
 end
@@ -45,7 +53,6 @@ end
     @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
 
     img = generate_fake_img()
-    initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders)
     result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
     @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
