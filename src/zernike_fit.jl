@@ -23,10 +23,10 @@ function zernikeloss(Z, img, Hz, Zval)
     _, _, _, S2tot, ukeep, D2tot, DdotS = loss_prep(Z, img, Hz, Zval)
     num = abs2.(DdotS)
     
-    F = zeros(Complex{Float64}, size(DdotS))
-    for id in findall(ukeep)
-        F[id] = DdotS[id] / S2tot[id]
-    end
+   # F = zeros(Complex{Float64}, size(DdotS))
+   # for id in findall(ukeep)
+   #     F[id] = DdotS[id] / S2tot[id]
+   # end
 
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
 end
