@@ -6,6 +6,7 @@ function construct_Zernimg(Zcoefs, img, initial_param::pd_density.InitialParam)
     Hz, Zval = pd_density.construct_Zernmat(img, initial_param)
     _, Sk = pd_density.ZernFT(Zcoefs, Hz, Zval, size(img))
 
+
     Dk = fft(img)
     S2tot = abs2.(Sk)
     ukeep = abs.(S2tot) .> eps()

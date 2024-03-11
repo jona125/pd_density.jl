@@ -28,6 +28,7 @@ function zernikeloss(Z, img, Hz, Zval)
    #     F[id] = DdotS[id] / S2tot[id]
    # end
 
+
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
 end
 
@@ -59,6 +60,7 @@ function zernike_img_fit(img, initial_param::InitialParam; kwargs...)
     g!(g, Z) = zernikegrad!(g, Z, img, Hz, Zval)
 
     params = zeros(1, initial_param.Z_orders)
+
 
     result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
     #result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
