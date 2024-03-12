@@ -57,7 +57,8 @@ end
     for id in findall(ukeep)
         F[id] = DdotS[id] / S2tot[id]
     end
-    @test fft(img_) .- F .* Sk ≈ zeros(Complex{Float64}, size(img_)) atol = 1e-4
+    @test img ≈ abs.(ifft(F)) rtol = 0.05
+    @test fft(img_) ≈ F .* Sk rtol = 1e-8
 
 
     # test fake img with psf effect
