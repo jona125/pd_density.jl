@@ -22,11 +22,11 @@ end
 function zernikeloss(Z, img, Hz, Zval)
     _, _, _, S2tot, ukeep, D2tot, DdotS = loss_prep(Z, img, Hz, Zval)
     num = abs2.(DdotS)
-    
-   # F = zeros(Complex{Float64}, size(DdotS))
-   # for id in findall(ukeep)
-   #     F[id] = DdotS[id] / S2tot[id]
-   # end
+
+    # F = zeros(Complex{Float64}, size(DdotS))
+    # for id in findall(ukeep)
+    #     F[id] = DdotS[id] / S2tot[id]
+    # end
 
 
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
@@ -53,7 +53,7 @@ function zernikegrad!(g, Z, img, Hz, Zval)
 end
 
 function zernike_img_fit(img, initial_param::InitialParam; kwargs...)
-    Hz, Zval = construct_Zernmat(img, initial_param)
+    Hz, Zval = construct_Zernmat(initial_param, size(img))
 
     #g = zeros(1, Z_orders)
     f(Z) = zernikeloss(Z, img, Hz, Zval)
