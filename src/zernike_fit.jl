@@ -13,15 +13,21 @@ function loss_prep(Z, img, Hz, Zval)
 
     # penalty prep
     S2tot = abs2.(Sk)
-    ukeep = abs.(S2tot) .> eps()
-    D2tot = abs.(Dk .* conj(Dk))
+    ukeep = S2tot .> eps()
+    D2tot = abs2.(Dk)
     DdotS = Dk .* conj(Sk)
     return Hk, Dk, Sk, S2tot, ukeep, D2tot, DdotS
 end
 
 function zernikeloss(Z, img, Hz, Zval)
     _, _, _, S2tot, ukeep, D2tot, DdotS = loss_prep(Z, img, Hz, Zval)
-    num = abs.(DdotS .* conj(DdotS))
+    num = abs2.(DdotS)
+
+    # F = zeros(Complex{Float64}, size(DdotS))
+    # for id in findall(ukeep)
+    #     F[id] = DdotS[id] / S2tot[id]
+    # end
+
 
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
 end
@@ -47,7 +53,7 @@ function zernikegrad!(g, Z, img, Hz, Zval)
 end
 
 function zernike_img_fit(img, initial_param::InitialParam; kwargs...)
-    Hz, Zval = construct_Zernmat(img, initial_param)
+    Hz, Zval = construct_Zernmat(initial_param, size(img))
 
     #g = zeros(1, Z_orders)
     f(Z) = zernikeloss(Z, img, Hz, Zval)
@@ -55,8 +61,9 @@ function zernike_img_fit(img, initial_param::InitialParam; kwargs...)
 
     params = zeros(1, initial_param.Z_orders)
 
-    #result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
-    result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
+
+    result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
+    #result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
     Optim.converged(result) || @warn "Optimization failed to converge"
     return result
 end

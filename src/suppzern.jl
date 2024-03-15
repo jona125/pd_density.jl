@@ -12,10 +12,10 @@ function ZernFT(Z, Hz, Zval, imsz)
     Hk = zeros(Complex{Float64}, imsz) # compute the pupil function
     hk = zeros(Complex{Float64}, imsz)
     for i = 1:imsz[3]
-        Hk[:, :, i] = Hz[:, :, i] .* exp(im * phi)
+        Hk[:, :, i] = Hz[:, :, i] .* cis.(phi)
         hk[:, :, i] = ifft(Hk[:, :, i])
     end
-    sk = hk .* conj(hk)
+    sk = abs2.(hk)
     Sk = zeros(Complex{Float64}, imsz)
     for i = 1:imsz[3]
         Sk[:, :, i] = fft(sk[:, :, i])
@@ -26,17 +26,18 @@ end
 
 
 function zernike_value(H, n_coefs, rho, theta)
-    rho[rho.>1] .= 0
+    rholim = deepcopy(rho)
+    rholim[rholim.>1] .= 0
     Zval = zeros((size(H)..., n_coefs))
     for ix = 1:n_coefs
-        Zval[:, :, ix] = Zern_gen(ix + 2, size(H), rho, theta) .* H
+        Zval[:, :, ix] = Zern_gen(ix + 2, size(H), rholim, theta) .* H
     end
     return Zval
 end
 
 function Zern_gen(p, sz, rho, theta)
     n = Int(ceil((-3 + sqrt(9 + 8 * p)) / 2))
-    m = Int(2 * p - n .* (n + 2))
+    m = Int(2 * p - n * (n + 2))
 
     # Z = Zernike(m, n; coord = :cartesian)
     # out = [
@@ -51,20 +52,20 @@ function Zern_gen(p, sz, rho, theta)
 end
 
 function Zcoefs2phi(Zcoefs, Zval)
-    #@show Zcoefs
+    @show Zcoefs
     phi = zeros(size(Zval)[1:end-1])
     for i = 1:length(Zcoefs)
-        phi = phi + Zcoefs[i] * Zval[:, :, i]
+        phi .= phi .+ Zcoefs[i] .* Zval[:, :, i]
     end
     return phi
 end
 
 
-function construct_Zernmat(img, initial_param::InitialParam)
+function construct_Zernmat(initial_param::InitialParam, imsz)
     (; n, NA, lambda, Z_orders) = initial_param
-    H, rho, theta = pd_initial(NA, lambda, size(img))
+    H, rho, theta = pd_initial(NA, lambda, imsz)
     Zval = zernike_value(H, Z_orders, rho, theta)
-    Hz = zern_initial(H, rho, initial_param, size(img))
+    Hz = zern_initial(H, rho, initial_param, imsz)
 
     return Hz, Zval
 end
