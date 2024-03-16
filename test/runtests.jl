@@ -20,14 +20,14 @@ end
 
     # test empty image
     img = zeros(32, 32, 32)
-    img[15:17, 15:17, 15:17] .= 0.5
+    img[16, 16, 16] = 1.0
     initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders)
     Z = zeros(Z_orders)
 
     # test construct_Zernimg()
     img_ = pd_density.construct_Zernimg(Z, img, initial_param)
     Zk = copy(Z)
-    Zk[2] = 3 * lambda
+    Zk[3] = 3 * lambda
     imgstack = zeros(size(img)..., 2)
     imgstack[:, :, :, 1] = img_
     imgstack[:, :, :, 2] = pd_density.construct_Zernimg(Zk, img_, initial_param, true)
@@ -50,7 +50,10 @@ end
     push!(Zcol, copy(Z))
     push!(Zcol, copy(Zk))
     result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-14)
-    #@test Optim.minimizer(result) ≈ Z atol = 1e-4
+
+
+    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
+
 
     # test gradient function
     f(X) = pd_density.psfloss(X, img_, Hz, Zval, img)
