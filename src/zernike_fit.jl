@@ -12,8 +12,7 @@ function loss_prep(Z, img, Hz, Zval, Z_de)
     Hk = zeros(Complex{Float64}, (imsz..., K))
     Sk = zeros(Complex{Float64}, (imsz..., K))
     for i = 1:K
-        Zk = Z .+ Z_de[i]
-        Hk[:, :, :, i], Sk[:, :, :, i] = ZernFT(Zk, Hz, Zval, imsz)
+        Hk[:, :, :, i], Sk[:, :, :, i] = ZernFT(Z .+ Z_de[i], Hz, Zval, imsz)
     end
 
     #compute transform of image
