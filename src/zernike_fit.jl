@@ -16,7 +16,7 @@ function loss_prep(Z, img, Hz, Zval, Z_de)
     end
 
     #compute transform of image
-    Dk = fft(img; dims=1:3)
+    Dk = fft(img, 1:3)
 
     # penalty prep
     S2tot = dropdims(sum(abs2.(Sk), dims = 4), dims = 4)
@@ -43,9 +43,10 @@ function zernikegrad!(g, Z, img, Hz, Zval, Z_de)
     grad_num = zeros(Complex{Float64}, size(img)[1:3])
     Zk = zeros(Complex{Float64}, size(img))
     ZconvH = zeros(Complex{Float64}, size(img))
+    mat_list = findall(ukeep)
     for i = 1:K
         grad_num[:, :, :] = coef1 .* conj(Dk[:, :, :, i]) - coef2 .* conj(Sk[:, :, :, i])
-        for id in findall(ukeep)
+        for id in mat_list
             idk = CartesianIndex(id, i)
             Zk[idk] = grad_num[id] / (S2tot[id] .^ 2)
         end
@@ -60,48 +61,27 @@ function zernikegrad!(g, Z, img, Hz, Zval, Z_de)
 end
 
 # Known F spread loss and gradient function
-function psfloss(Z, img, Hz, Zval)
-    _, Dk, Sk, _, _, _, _ = loss_prep(Z, img, Hz, Zval, [Z])
+function psfloss(Z, img, Hz, Zval, F)
+    _, S = ZernFT(Z, Hz, Zval, size(img))
+    D = fft(img)
 
-    F = zeros(size(img))
-    F[CartesianIndex(Int.(floor.(size(img) ./ 2)))] = 1.0
-    P = Dk[:, :, :, 1] .- fft(F) .* Sk[:, :, :, 1]
+    P = D .- fft(F) .* S
 
-    @show sum(abs2.(P))
+    #@show sum(abs2.(P))
     return sum(abs2.(P))
 end
 
-function psfgrad!(g, Z, img, Hz, Zval)
-    Hk, Dk, Sk, _, _, _, _ = loss_prep(Z, img, Hz, Zval, [Z])
+function psfgrad!(g, Z, img, Hz, Zval, F)
+    H, S = ZernFT(Z, Hz, Zval, size(img))
+    D = fft(img)
 
-    F = zeros(size(img))
-    F[CartesianIndex(Int.(floor.(size(img) ./ 2)))] = 1.0
-    F = fft(F)
-    F2tot = abs2.(F)
-    H = dropdims(Hk, dims = 4)
-    S = dropdims(Sk, dims = 4)
-    D = dropdims(Dk, dims = 4)
+    F_t = fft(F)
+    F2tot = abs2.(F_t)
 
-    Z1convH = fft(ifft(D .* conj(F)) .* ifft(conj(H)))
+    Z1convH = fft(ifft(D .* conj(F_t)) .* ifft(conj(H)))
     Z2convH = fft(ifft(F2tot .* conj(S)) .* ifft(conj(H)))
 
-    grad = 2 .* (imag(H .* Z2convH .- H .* Z1convH .* 2))
-    for id in eachindex(g)
-        g[id] = sum(grad .* Zval[:, :, id])
-    end
-    return g
-end
-
-function zernike_img_fit(img, initial_param::InitialParam; Zcol = [], kwargs...)
-    Hz, Zval, _ = construct_Zernmat(initial_param, size(img)[1:3])
-    f(Z) = !isempty(Zcol) ? zernikeloss(Z, img, Hz, Zval, Zcol) : psfloss(Z, img, Hz, Zval)
-    g!(g, Z) =
-        !isempty(Zcol) ? zernikegrad!(g, Z, img, Hz, Zval, Zcol) :
-        psfgrad!(g, Z, img, Hz, Zval)
-
-    params = zeros(1, Z_orders)
-
-    grad = 2 .* imag(H .* Z2convH .- H .* Z1convH)
+    grad = 2 .* (imag(H .* Z1convH .* 2 .- H .* Z2convH))
     for id in eachindex(g)
         g[id] = sum(grad .* Zval[:, :, id])
     end
@@ -122,7 +102,8 @@ function zernike_img_fit(
         !isempty(Zcol) ? zernikegrad!(g, Z, img, Hz, Zval, Zcol) :
         psfgrad!(g, Z, img, Hz, Zval, F)
 
-    params = zeros(initial_param.Z_orders)
+    params = zeros(1, Z_orders)
+
     #result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
     result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
     Optim.converged(result) || @warn "Optimization failed to converge"
