@@ -16,10 +16,7 @@ function loss_prep(Z, img, Hz, Zval, Z_de)
     end
 
     #compute transform of image
-    Dk = zeros(Complex{Float64}, (imsz..., K))
-    for i = 1:K
-        Dk[:, :, :, i] = fft(img[:, :, :, i])
-    end
+    Dk = fft(img; dims=1:3)
 
     # penalty prep
     S2tot = dropdims(sum(abs2.(Sk), dims = 4), dims = 4)
