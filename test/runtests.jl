@@ -71,8 +71,9 @@ end
     #@test Optim.minimizer(result) ≈ Z atol = 1e-4
 
     # test gradient function
-    f(X) = pd_density.psfloss(X, img_, Hz, Zval, img)
-    g!(g,X) = pd_density.psfgrad!(g, X, img_, Hz, Zval, img)
+
+    f(X) = pd_density.psfloss(X, imgstack[:, :, :, 2], Hz, Zval, img)
+    g!(g, X) = pd_density.psfgrad!(g, X, imgstack[:, :, :, 2], Hz, Zval, img)
     g = zeros(Z_orders)
     #@test g!(g, Z) ≈ grad(central_fdm(5,1), f, Z)[1]'
 
