@@ -69,6 +69,28 @@ function zernike_img_fit(img, initial_param::InitialParam; kwargs...)
 
     params = zeros(1, Z_orders)
 
+    grad = 2 .* imag(H .* Z2convH .- H .* Z1convH)
+    for id in eachindex(g)
+        g[id] = sum(grad .* Zval[:, :, id])
+    end
+    return g
+end
+
+function zernike_img_fit(
+    img,
+    initial_param::InitialParam;
+    Zcol = [],
+    F = zeros(size(img)),
+    kwargs...,
+)
+    Hz, Zval = construct_Zernmat(initial_param, size(img)[1:3])
+    f(Z) =
+        !isempty(Zcol) ? zernikeloss(Z, img, Hz, Zval, Zcol) : psfloss(Z, img, Hz, Zval, F)
+    g!(g, Z) =
+        !isempty(Zcol) ? zernikegrad!(g, Z, img, Hz, Zval, Zcol) :
+        psfgrad!(g, Z, img, Hz, Zval, F)
+
+    params = zeros(initial_param.Z_orders)
     #result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
     result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
     Optim.converged(result) || @warn "Optimization failed to converge"
