@@ -55,7 +55,7 @@ function zernikegrad!(g, Z, img, Hz, Zval, Z_de)
 
     grad_mat = 4 * imag(sum(Hk .* ZconvH, dims = 4))
     for id in eachindex(g)
-        g[id] = sum(grad_mat .* Zval[:, :, id])
+        g[id] = -sum(grad_mat .* Zval[:, :, id])
     end
     #@show g
 end
@@ -81,7 +81,7 @@ function psfgrad!(g, Z, img, Hz, Zval, F)
     Z1convH = fft(ifft(D .* conj(F_t)) .* ifft(conj(H)))
     Z2convH = fft(ifft(F2tot .* conj(S)) .* ifft(conj(H)))
 
-    grad = 2 .* (imag(H .* Z1convH .* 2 .- H .* Z2convH))
+    grad = 2 .* (imag(2 .* H .* Z1convH .- H .* Z2convH))
     for id in eachindex(g)
         g[id] = sum(grad .* Zval[:, :, id])
     end
@@ -102,8 +102,7 @@ function zernike_img_fit(
         !isempty(Zcol) ? zernikegrad!(g, Z, img, Hz, Zval, Zcol) :
         psfgrad!(g, Z, img, Hz, Zval, F)
 
-    params = zeros(1, Z_orders)
-
+    params = zeros(initial_param.Z_orders)
     #result = optimize(f, g!, params, BFGS(), Optim.Options(; kwargs...))
     result = optimize(f, params, BFGS(), Optim.Options(; kwargs...))
     Optim.converged(result) || @warn "Optimization failed to converge"

@@ -22,7 +22,7 @@ function Z_test(Zcoeffs, img, initial_param::pd_density.InitialParam)
     img_ = pd_density.construct_Zernimg(Zcoeffs, img, initial_param)
     result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-14)
 
-    @test Optim.minimizer(result) ≈ Zcoeffs atol = 1e-4
+    @test Optim.minimizer(result) ≈ Zcoeffs atol = 1e-6
     return result
 end
 
@@ -37,6 +37,8 @@ end
     img = zeros(32, 32, 32)
     img[16, 16, 16] = 1.0
     initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders)
+    
+    #img = generate_fake_img()
     Z = zeros(Z_orders)
 
     # test construct_Zernimg()
@@ -68,15 +70,25 @@ end
 
     #@test Optim.minimizer(result) ≈ Z atol = 1e-4
 
+    # test gradient function
+    f(X) = pd_density.psfloss(X, img_, Hz, Zval, img)
+    g!(g,X) = pd_density.psfgrad!(g, X, img_, Hz, Zval, img)
+    g = zeros(Z_orders)
+    #@test g!(g, Z) ≈ grad(central_fdm(5,1), f, Z)[1]'
+
     # test fake img with psf effect
     result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-6)
 
-    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
+    @test Optim.minimizer(result) ≈ zeros(Z_orders) atol = 1e-4
 
     # test fake img with Zernike coefficient
     for i = 1:Z_orders
         Zcoeffs = copy(Z)
-        Zcoeffs[i] = 3.0
+        Zcoeffs[i] = 1.0
         Z_test(Zcoeffs, img, initial_param)
     end
+
+    # test random Zernike coefficient
+    Zcoeffs = rand(Z_orders) ./ 2.0
+    Z_test(Zcoeffs, img, initial_param)
 end
