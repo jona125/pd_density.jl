@@ -9,6 +9,7 @@ FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 ZernikePolynomials = "e462d300-c971-11e9-30f1-fb93b1f8f73a"
 
 [compat]
@@ -19,7 +20,6 @@ OffsetArrays = "1.13"
 Optim = "1.9"
 ZernikePolynomials = "0.1"
 julia = "1.7"
-
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
