@@ -19,6 +19,7 @@ function loss_prep(Z, img, Hz, Zval, Z_de)
     Dk = fft(img, 1:3)
 
     # penalty prep
+
     S2tot = dropdims(sum(abs2.(Sk), dims = 4), dims = 4)
     ukeep = S2tot .> eps()
     D2tot = dropdims(sum(abs2.(Dk), dims = 4), dims = 4)
@@ -31,8 +32,10 @@ function zernikeloss(Z, img, Hz, Zval, Z_de)
     _, _, _, S2tot, ukeep, D2tot, DdotS = loss_prep(Z, img, Hz, Zval, Z_de)
     num = abs2.(DdotS)
 
+
     return -sum(num[ukeep] ./ S2tot[ukeep]) + sum(D2tot)
 end
+
 
 function zernikegrad!(g, Z, img, Hz, Zval, Z_de)
     Hk, Dk, Sk, S2tot, ukeep, _, DdotS = loss_prep(Z, img, Hz, Zval, Z_de)
@@ -53,10 +56,12 @@ function zernikegrad!(g, Z, img, Hz, Zval, Z_de)
         ZconvH[:, :, :, i] = fft(ifft(Zk[:, :, :, i]) .* ifft(conj(Hk[:, :, :, i])))
     end
 
+
     grad_mat = 4 * imag(sum(Hk .* ZconvH, dims = 4))
     for id in eachindex(g)
         g[id] = -sum(grad_mat .* Zval[:, :, id])
     end
+    return g
     #@show g
 end
 

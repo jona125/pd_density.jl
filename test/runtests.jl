@@ -31,6 +31,7 @@ end
     n = 1.33
     lambda = 0.53
     NA = 0.5
+
     Z_orders = 9 # Z(1,-1) -> Z(4,4)
 
     # test empty image
@@ -65,9 +66,9 @@ end
     Zcol = []
     push!(Zcol, copy(Z))
     push!(Zcol, copy(Zk))
-
     result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-14)
     #@test Optim.minimizer(result) ≈ Z atol = 1e-4
+
 
     # test gradient function
 
@@ -79,8 +80,8 @@ end
     # test fake img with psf effect
     result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-6)
 
-    @test Optim.minimizer(result) ≈ zeros(Z_orders) atol = 1e-4
 
+    @test Optim.minimizer(result) ≈ zeros(Z_orders) atol = 1e-4
     # test fake img with Zernike coefficient
     for i = 1:Z_orders
         Zcoeffs = copy(Z)
