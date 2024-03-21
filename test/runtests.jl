@@ -37,8 +37,7 @@ end
     img = zeros(32, 32, 32)
     img[16, 16, 16] = 1.0
     initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders)
-    
-    #img = generate_fake_img()
+
     Z = zeros(Z_orders)
 
     # test construct_Zernimg()
@@ -66,8 +65,8 @@ end
     Zcol = []
     push!(Zcol, copy(Z))
     push!(Zcol, copy(Zk))
-    result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-6)
 
+    result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-14)
     #@test Optim.minimizer(result) ≈ Z atol = 1e-4
 
     # test gradient function
@@ -75,7 +74,7 @@ end
     f(X) = pd_density.psfloss(X, imgstack[:, :, :, 2], Hz, Zval, img)
     g!(g, X) = pd_density.psfgrad!(g, X, imgstack[:, :, :, 2], Hz, Zval, img)
     g = zeros(Z_orders)
-    #@test g!(g, Z) ≈ grad(central_fdm(5,1), f, Z)[1]'
+    #@test g!(g, Zk) ≈ grad(central_fdm(2, 1), f, Zk)[1] atol = eps()
 
     # test fake img with psf effect
     result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-6)
