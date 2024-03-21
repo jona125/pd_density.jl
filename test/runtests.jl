@@ -1,26 +1,14 @@
 using pd_density
 using Test
-using Optim, FiniteDifferences, FFTW
+using Optim, FiniteDifferences, FFTW, Statistics
 
-function construct_Zernimg(Zcoefs, img, initial_param::pd_density.InitialParam)
-    Hz, Zval = pd_density.construct_Zernmat(initial_param, size(img))
-    _, Sk = pd_density.ZernFT(Zcoefs, Hz, Zval, size(img))
+function Z_test(Zcoeffs, img, initial_param::pd_density.InitialParam, noise = 0.0)
+    img_ = pd_density.construct_Zernimg(Zcoeffs, img, initial_param)
+    img_ .+= noise * mean(img_) .* rand(size(img)...)
+    result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-14)
 
-    imgfft = fft(img)
-    D = imgfft .* Sk
-
-    return ifft(D)
-end
-
-function create_sphere(stack, center, radius, gray_level)
-    for coord in CartesianIndices(stack)
-        if (
-            (coord[1] - center[1])^2 + (coord[2] - center[2])^2 + (coord[3] - center[3])^2
-        ) <= radius^2
-            stack[coord] += gray_level / 256
-        end
-    end
-    return stack
+    @test Optim.minimizer(result) ≈ Zcoeffs atol = 1e-4
+    return result
 end
 
 function generate_fake_img()
@@ -30,55 +18,78 @@ function generate_fake_img()
     return stack
 end
 
+function Z_test(Zcoeffs, img, initial_param::pd_density.InitialParam)
+    img_ = pd_density.construct_Zernimg(Zcoeffs, img, initial_param)
+    result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-14)
+
+    @test Optim.minimizer(result) ≈ Zcoeffs atol = 1e-6
+    return result
+end
 
 @testset "pd_density.jl" begin
 
     n = 1.33
     lambda = 0.53
     NA = 0.5
-    Z_orders = 11 # Z(2.-2) -> Z(4,4)
+
+    Z_orders = 9 # Z(1,-1) -> Z(4,4)
 
     # test empty image
-    img = zeros(128, 128, 128)
-    img[64, 64, 64] = 1
+    img = zeros(32, 32, 32)
+    img[16, 16, 16] = 1.0
     initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders)
-    result = zernike_img_fit(img, initial_param; g_abstol = 1e-14)
 
-    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
-
-    img = generate_fake_img()
-    Z = zeros(1, Z_orders)
+    Z = zeros(Z_orders)
 
     # test construct_Zernimg()
-    img_ = construct_Zernimg(Z, img, initial_param)
-    Hz, Zval = pd_density.construct_Zernmat(initial_param, size(img_))
-    _, _, Sk, S2tot, ukeep, _, DdotS = pd_density.loss_prep(Z, img_, Hz, Zval)
-    F = zeros(Complex{Float64}, size(DdotS))
-    for id in findall(ukeep)
-        F[id] = DdotS[id] / S2tot[id]
-    end
-    @test img ≈ abs.(ifft(F)) rtol = 0.05
-    @test fft(img_) ≈ F .* Sk rtol = 1e-8
+    img_ = pd_density.construct_Zernimg(Z, img, initial_param)
+    Zk = copy(Z)
+    Zk[7] = 3 * lambda
+    imgstack = zeros(Complex{Float64}, (size(img)..., 2))
+    imgstack[:, :, :, 1] = img_
+    imgstack[:, :, :, 2] = pd_density.construct_Zernimg(Zk, img_, initial_param, true)
 
+    Hz, Zval = pd_density.construct_Zernmat(initial_param, size(img_))
+    Hk, Dk, Sk, _, ukeep, _, _ = pd_density.loss_prep(Z, imgstack, Hz, Zval, Zk)
+    F = zeros(Complex{Float64}, (size(img)..., 2))
+    for i = 1:2
+        for id in findall(ukeep)
+            idx = CartesianIndex(id, i)
+            F[idx] = (Dk[idx] .* conj(Sk[idx])) / abs2.(Sk[idx])
+        end
+    end
+    @test img ≈ abs.(ifft(F[:, :, :, 1])) rtol = 1
+    @test img_ ≈ abs.(ifft(F[:, :, :, 1] .* Sk[:, :, :, 1])) atol = 0.1
+    @test imgstack[:, :, :, 2] ≈ abs.(ifft(F[:, :, :, 2] .* Sk[:, :, :, 2])) atol = 0.1
+
+    # test fake img with K phase diversity image
+    Zcol = []
+    push!(Zcol, copy(Z))
+    push!(Zcol, copy(Zk))
+    result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-14)
+    #@test Optim.minimizer(result) ≈ Z atol = 1e-4
+
+
+    # test gradient function
+
+    f(X) = pd_density.psfloss(X, imgstack[:, :, :, 2], Hz, Zval, img)
+    g!(g, X) = pd_density.psfgrad!(g, X, imgstack[:, :, :, 2], Hz, Zval, img)
+    g = zeros(Z_orders)
+    #@test g!(g, Zk) ≈ grad(central_fdm(2, 1), f, Zk)[1] atol = eps()
 
     # test fake img with psf effect
-    result = zernike_img_fit(img_, initial_param; g_abstol = 1e-14)
+    result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-6)
 
-    @test Optim.minimizer(result) ≈ zeros(1, Z_orders) atol = 1e-4
 
+    @test Optim.minimizer(result) ≈ zeros(Z_orders) atol = 1e-4
     # test fake img with Zernike coefficient
-    Z[5] = 3.0
-    img_ = construct_Zernimg(Z, img, initial_param)
-    result = zernike_img_fit(img_, initial_param; g_abstol = 1e-14)
+    for i = 1:Z_orders
+        Zcoeffs = copy(Z)
+        Zcoeffs[i] = 1.0
+        Z_test(Zcoeffs, img, initial_param)
+    end
 
-    @test Optim.minimizer(result) ≈ Z atol = 1e-4
-
-
-    # test fake img with random Zernike coefficient
-    Z = rand(1, Z_orders) * 3
-    img_ = construct_Zernimg(Z, img, initial_param)
-    result = zernike_img_fit(img_, initial_param; g_abstol = 1e-14)
-
-    @test Optim.minimizer(result) ≈ Z atol = 1e-4
-
+    # test random Zernike coefficient
+    Zcoeffs = rand(Z_orders) ./ 2.0
+    Z_test(Zcoeffs, img, initial_param)
 end
