@@ -9,6 +9,7 @@ struct InitialParam
     NA::Float64
     lambda::Float64
     Z_orders::Int64
+    pixel_spacing::Vector{Float64}
 end
 
 export zernike_img_fit

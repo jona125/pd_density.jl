@@ -12,18 +12,17 @@ function Z_test(Zcoeffs, img, initial_param::pd_density.InitialParam, noise = 0.
 end
 
 @testset "pd_density.jl" begin
-
+    # initial parameters
     n = 1.33
     lambda = 0.53
     NA = 0.5
-
-    Z_orders = 9 # Z(1,-1) -> Z(4,4)
+    Z_orders = 9 # Z(1,-1) -> Z(3,3)
+    pixel_spacing = [1.0, 1.0, 1.0]
 
     # test empty image
     img = zeros(32, 32, 32)
     img[16, 16, 16] = 1.0
-    initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders)
-
+    initial_param = pd_density.InitialParam(n, NA, lambda, Z_orders, pixel_spacing)
     Z = zeros(Z_orders)
     Zcol = []
     push!(Zcol, copy(Z))
@@ -37,7 +36,7 @@ end
     imgstack[:, :, :, 2] = pd_density.construct_Zernimg(Zcol[2], img, initial_param)
 
     Hz, Zval = pd_density.construct_Zernmat(initial_param, size(img_))
-    Hk, Dk, Sk, _, ukeep, _, _ = pd_density.loss_prep(Z, imgstack, Hz, Zval, Zcol[2])
+    _, Dk, Sk, _, ukeep, _, _ = pd_density.loss_prep(Z, imgstack, Hz, Zval, Zcol[2])
     F = zeros(Complex{Float64}, (size(img)..., 2))
     for i = 1:2
         for id in findall(ukeep)
@@ -61,7 +60,6 @@ end
 
     # test fake img with psf effect
     result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-6)
-
     @test Optim.minimizer(result) ≈ Z atol = 1e-4
 
     # test fake img with Zernike coefficient
