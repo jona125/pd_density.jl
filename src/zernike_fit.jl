@@ -57,7 +57,7 @@ function zernikegrad!(g, Z, img, Hz, Zval, Z_de)
 
     grad_mat = 4 * imag(sum(Hk .* ZconvH, dims = 4))
     for id in eachindex(g)
-        g[id] = -sum(grad_mat .* Zval[:, :, id])
+        g[id] = sum(grad_mat .* Zval[:, :, id])
     end
     return g
     #@show g
@@ -84,9 +84,9 @@ function psfgrad!(g, Z, img, Hz, Zval, F)
     Z1convH = fft(ifft(D .* conj(F_t)) .* ifft(conj(H)))
     Z2convH = fft(ifft(F2tot .* conj(S)) .* ifft(conj(H)))
 
-    grad = 2 .* (imag(H .* Z2convH .- 2 .* H .* Z1convH))
+    grad = 2 .* (imag(H .* Z2convH .- H .* Z1convH))
     for id in eachindex(g)
-        g[id] = sum(grad .* Zval[:, :, id])
+        g[id] = (sum(grad .* Zval[:, :, id]))
     end
     return g
 end

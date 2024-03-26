@@ -61,8 +61,8 @@ function Zcoefs2phi(Zcoefs, Zval)
 end
 
 
-function construct_Zernimg(Zcoefs, img, initial_param::InitialParam, defocus::Bool = false)
-    Hz, Zval = construct_Zernmat(initial_param, size(img), defocus)
+function construct_Zernimg(Zcoefs, img, initial_param::InitialParam)
+    Hz, Zval = construct_Zernmat(initial_param, size(img))
     _, S = ZernFT(Zcoefs, Hz, Zval, size(img))
 
     imgfft = fft(img)
@@ -71,16 +71,11 @@ function construct_Zernimg(Zcoefs, img, initial_param::InitialParam, defocus::Bo
     return (ifft(D))
 end
 
-function construct_Zernmat(initial_param::InitialParam, imsz, defocus::Bool = false)
-
+function construct_Zernmat(initial_param::InitialParam, imsz)
     (; n, NA, lambda, Z_orders) = initial_param
     H, rho, theta = pd_initial(NA, lambda, imsz)
     Zval = zernike_value(H, Z_orders, rho, theta)
     Hz = zern_initial(H, rho, initial_param, imsz)
-
-    if defocus
-        Hz = reshape(repeat(H, imsz[3]), imsz)
-    end
 
     return Hz, Zval
 end
