@@ -26,7 +26,7 @@ function zern_initial(H, rho, initial_param, imsz)
     coef = n / lambda
     kz = sqrt.(Complex.(coef^2 .- rho .^ 2))
     Hz = zeros(Complex{Float64}, imsz)
-    for ix = 1:imsz[3]
+    for ix in eachindex(zFrame)
         Hz[:, :, ix] = H .* cispi.(2 * zFrame[ix] .* kz)
     end
     return Hz

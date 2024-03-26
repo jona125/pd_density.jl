@@ -27,7 +27,7 @@ end
     Zcol = []
     push!(Zcol, copy(Z))
     push!(Zcol, copy(Z))
-    
+
     # test construct_Zernimg()
     img_ = pd_density.construct_Zernimg(Zcol[1], img, initial_param)
     Zcol[2][7] += lambda
@@ -36,7 +36,7 @@ end
     imgstack[:, :, :, 2] = pd_density.construct_Zernimg(Zcol[2], img, initial_param)
 
     Hz, Zval = pd_density.construct_Zernmat(initial_param, size(img_))
-    _, Dk, Sk, _, ukeep, _, _ = pd_density.loss_prep(Z, imgstack, Hz, Zval, Zcol[2])
+    _, Dk, Sk, _, ukeep, _, _ = pd_density.loss_prep(Z, imgstack, Hz, Zval, Zcol)
     F = zeros(Complex{Float64}, (size(img)..., 2))
     for i = 1:2
         for id in findall(ukeep)
@@ -52,11 +52,17 @@ end
     result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-14)
     @test Optim.minimizer(result) ≈ Z atol = 1e-4
 
-    # test gradient function
-    f(X) = pd_density.psfloss(X, imgstack[:, :, :, 1], Hz, Zval, img)
-    g!(g, X) = pd_density.psfgrad!(g, X, imgstack[:, :, :, 1], Hz, Zval, img)
+    # test denstiy gradient function
+    f_d(X) = pd_density.zernikeloss(X, imgstack, Hz, Zval, Zcol)
+    g_d!(g, X) = pd_density.zernikegrad!(g, X, imgstack, Hz, Zval, Zcol)  
     g = zeros(Z_orders)
-    @test g!(g, Z) ≈ grad(central_fdm(2, 1), f, Z)[1] atol = 1e-14
+    @test g_d!(g, Z) ≈ grad(central_fdm(5, 1), f_d, Z)[1] atol = 1e-8
+
+    # test psf gradient function
+    f_p(X) = pd_density.psfloss(X, imgstack[:, :, :, 1], Hz, Zval, img)
+    g_p!(g, X) = pd_density.psfgrad!(g, X, imgstack[:, :, :, 1], Hz, Zval, img)
+    g = zeros(Z_orders)
+    @test g_p!(g, Z) ≈ grad(central_fdm(2, 1), f_p, Z)[1] atol = 1e-14
 
     # test fake img with psf effect
     result = zernike_img_fit(img_, initial_param; F = img, g_abstol = 1e-6)
