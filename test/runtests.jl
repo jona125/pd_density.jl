@@ -50,7 +50,7 @@ end
 
     # test fake img with K phase diversity image
     result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-14)
-    @test Optim.minimizer(result) ≈ Z atol = 1e-4
+    @test Optim.minimizer(result) ≈ Z atol = 1e-6
 
     # test denstiy gradient function
     f_d(X) = pd_density.zernikeloss(X, imgstack, Hz, Zval, Zcol)
