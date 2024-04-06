@@ -2,6 +2,26 @@ using pd_density
 using Test
 using Optim, FiniteDifferences, FFTW, Statistics
 
+function imgstack_build(img, initial_param::pd_density.InitialParam, Zcol)
+    imgstack = zeros(Complex{Float64}, (size(img)..., 2))
+    imgstack[:, :, :, 1] = pd_density.construct_Zernimg(Zcol[1], img, initial_param)
+    imgstack[:, :, :, 2] = pd_density.construct_Zernimg(Zcol[2], img, initial_param)
+    return imgstack
+end
+
+function Z_test_k(img, initial_param::pd_density.InitialParam, Z, noise = 0.0)
+    Zcol = []
+    push!(Zcol, copy(Z))
+    push!(Zcol, copy(Z))
+    Zcol[2][7] += initial_param.lambda
+
+    imgstack = imgstack_build(img, initial_param, Zcol)
+    imgstack .+= noise * mean(imgstack) .* rand(size(imgstack)...)
+
+    result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-14)
+    @test Optim.minimizer(result) ≈ Z atol = 1e-4
+end
+
 function Z_test(Zcoeffs, img, initial_param::pd_density.InitialParam, noise = 0.0)
     img_ = pd_density.construct_Zernimg(Zcoeffs, img, initial_param)
     img_ .+= noise * mean(img_) .* rand(size(img)...)
@@ -31,9 +51,7 @@ end
     # test construct_Zernimg()
     img_ = pd_density.construct_Zernimg(Zcol[1], img, initial_param)
     Zcol[2][7] += lambda
-    imgstack = zeros(Complex{Float64}, (size(img)..., 2))
-    imgstack[:, :, :, 1] = img_
-    imgstack[:, :, :, 2] = pd_density.construct_Zernimg(Zcol[2], img, initial_param)
+    imgstack = imgstack_build(img, initial_param, Zcol)
 
     Hz, Zval = pd_density.construct_Zernmat(initial_param, size(img_))
     _, Dk, Sk, _, ukeep, _, _ = pd_density.loss_prep(Z, imgstack, Hz, Zval, Zcol)
@@ -52,9 +70,18 @@ end
     result = zernike_img_fit(imgstack, initial_param; Zcol, g_abstol = 1e-14)
     @test Optim.minimizer(result) ≈ Z atol = 1e-6
 
+    # test fake img with K phase diversity image
+    #for i = 1:Z_orders
+    #    Zcoeffs = copy(Z)
+    #    Zcoeffs[i] = 1.0
+    #    Z_test_k(img, initial_param, Zcoeffs)
+    #    noise = 0.02
+    #    Z_test_k(img, initial_param, Zcoeffs, noise)
+    #end    
+
     # test denstiy gradient function
     f_d(X) = pd_density.zernikeloss(X, imgstack, Hz, Zval, Zcol)
-    g_d!(g, X) = pd_density.zernikegrad!(g, X, imgstack, Hz, Zval, Zcol)  
+    g_d!(g, X) = pd_density.zernikegrad!(g, X, imgstack, Hz, Zval, Zcol)
     g = zeros(Z_orders)
     @test g_d!(g, Z) ≈ grad(central_fdm(5, 1), f_d, Z)[1] atol = 1e-8
 
