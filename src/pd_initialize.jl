@@ -6,10 +6,11 @@ function pd_initial(NA, lambda, imsz)
     pupil = NA / lambda
 
     H = zeros(imsz[1:2])
-    xrng = yrng = [1:ceil(imsz[1] / 2); -floor(imsz[1] / 2):-1] ./ imsz[1] * 4
+    xrng = [1:ceil(imsz[1] / 2); -floor(imsz[1] / 2):-1] ./ imsz[1] * 4
+    yrng = [1:ceil(imsz[2] / 2); -floor(imsz[2] / 2):-1] ./ imsz[2] * 4
 
-    theta = [atan(y, x) for y in yrng, x in xrng]
-    rho = [hypot(x, y) for y in yrng, x in xrng]
+    theta = [atan(y, x) for x in xrng, y in yrng]
+    rho = [hypot(x, y) for x in xrng, y in yrng]
 
     H = rho .^ 2 .<= pupil^2
 
