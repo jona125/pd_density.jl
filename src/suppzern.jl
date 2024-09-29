@@ -39,14 +39,7 @@ function Zern_gen(p, sz, rho, theta)
     n = Int(ceil((-3 + sqrt(9 + 8 * p)) / 2))
     m = Int(2 * p - n * (n + 2))
 
-    # Z = Zernike(m, n; coord = :cartesian)
-    # out = [
-    #     Z.(((1:sz[1]) .* 2 .- sz[1]) ./ sz[1], i) for
-    #     i in ((1:sz[2]) .* 2 .- sz[2]) ./ sz[2]
-    # ]
-    # return mapreduce(permutedims, vcat, out)
-
-    Z = Zernike(m, n; coord = :polar)
+    Z = zernike(NM(n, m); coord = :polar)
 
     return Z.(rho, theta)
 end
